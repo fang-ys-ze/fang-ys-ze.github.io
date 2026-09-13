@@ -106,6 +106,14 @@ h1{font-size:22px;margin:0;letter-spacing:1px}
 .result-head{margin:20px 0 14px;font-size:14px;color:var(--muted)}
 footer{margin-top:56px;text-align:center;font-size:12px;color:#b3bcc4}
 footer a{color:inherit}
+.back-top{position:fixed;right:18px;bottom:18px;width:38px;height:38px;
+  border-radius:50%;border:1px solid var(--line);background:rgba(255,255,255,.92);
+  color:var(--muted);font-size:16px;line-height:1;cursor:pointer;
+  box-shadow:0 2px 10px rgba(0,0,0,.10);z-index:99;
+  opacity:0;pointer-events:none;transition:all .2s ease}
+.back-top.show{opacity:1;pointer-events:auto}
+.back-top:hover{color:var(--accent);border-color:var(--accent-line);
+  background:var(--accent-soft);transform:translateY(-2px)}
 .kao{font-weight:400;font-size:17px;color:var(--muted)}
 .fav-head{display:flex;align-items:center;gap:14px;margin:22px 0 14px}
 .fav-head .result-head{margin:0}
@@ -133,6 +141,7 @@ footer a{color:inherit}
 
   <footer>播放资源来自 <a href="https://cn.agekkkk.com/" target="_blank" rel="noopener">4K动漫</a> · 本页仅为个人索引</footer>
 </div>
+<button id="backTop" class="back-top" title="回到顶部">↑</button>
 
 <script src="data.js"></script>
 <script>
@@ -155,6 +164,7 @@ let favs = load(LS_FAV, []);
 let history = load(LS_HIS, []);
 let favMode = false;
 let selYear = null, selMonth = null;   // null = 全部
+let showOldYears = false;              // 是否展开 2016 年及以前
 
 function cardHTML(item){
   const on = favs.includes(item.title);
@@ -191,22 +201,25 @@ function dirChip(label, kind, val, on){
 }
 
 function renderIndex(){
-  let html = `<div class="dir-row"><span class="dir-label">年份</span><span class="dir-opts">`
-    + dirChip('全部', 'y', '', selYear == null)
-    + YEARS.map(y => dirChip(y + '年', 'y', y, selYear === y)).join('')
-    + dirChip('更早', 'y', 'old', selYear === 'old')
-    + `</span></div>`;
+  const oldest = Math.min(...ANIME_DATA.map(a => a.year), 2016);
+  const hiddenYears = [];
+  for (let y = 2016; y >= oldest; y--) hiddenYears.push(y);
+  const expanded = showOldYears || (typeof selYear === 'number' && selYear < 2017);
+
+  let yearChips = dirChip('全部', 'y', '', selYear == null)
+    + YEARS.filter(y => y >= 2017).map(y => dirChip(y + '年', 'y', y, selYear === y)).join('');
+  if (expanded) yearChips += hiddenYears.map(y => dirChip(y + '年', 'y', y, selYear === y)).join('');
+  if (hiddenYears.length)
+    yearChips += `<button class="dir-chip" data-kind="more">${expanded ? '收起 ▴' : '更早 ▾'}</button>`;
+
+  let html = `<div class="dir-row"><span class="dir-label">年份</span><span class="dir-opts">${yearChips}</span></div>`;
   html += `<div class="dir-row"><span class="dir-label">月份</span><span class="dir-opts">`
     + dirChip('全部', 'm', '', selMonth == null)
     + QUARTERS.map(m => dirChip(QLABEL[m], 'm', m, selMonth === m)).join('')
     + `</span></div>`;
 
   const list = ANIME_DATA
-    .filter(a => (selYear == null
-                    ? true
-                    : selYear === 'old'
-                      ? a.year < 2015
-                      : a.year === selYear)
+    .filter(a => (selYear == null || a.year === selYear)
               && (selMonth == null || quarter(a.month) === selMonth))
     .sort((a, b) => b.year - a.year || quarter(b.month) - quarter(a.month));
   html += `<div class="result-head">共 ${list.length} 部</div>`;
@@ -263,8 +276,14 @@ document.addEventListener('click', e => {
   const dir = e.target.closest('.dir-chip');
   if (dir) {
     const v = dir.dataset.val;
-    if (dir.dataset.kind === 'y') { selYear = v === '' ? null : (v === 'old' ? 'old' : +v); selMonth = null; }
-    else { selMonth = v === '' ? null : +v; }
+    if (dir.dataset.kind === 'more') {
+      showOldYears = !showOldYears;
+      if (!showOldYears && typeof selYear === 'number' && selYear < 2017) selYear = null;
+    } else if (dir.dataset.kind === 'y') {
+      selYear = v === '' ? null : +v; selMonth = null;
+    } else {
+      selMonth = v === '' ? null : +v;
+    }
     render();
     return;
   }
@@ -319,6 +338,14 @@ $('historyChips').addEventListener('click', e => {
 });
 $('clearHis').addEventListener('click', () => {
   history = []; save(LS_HIS, history); renderHistory(); render();
+});
+
+const backTop = $('backTop');
+window.addEventListener('scroll', () => {
+  backTop.classList.toggle('show', window.scrollY > 300);
+}, { passive: true });
+backTop.addEventListener('click', () => {
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 });
 
 refreshFavUI();
