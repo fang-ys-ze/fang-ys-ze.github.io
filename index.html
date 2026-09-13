@@ -194,6 +194,7 @@ function renderIndex(){
   let html = `<div class="dir-row"><span class="dir-label">年份</span><span class="dir-opts">`
     + dirChip('全部', 'y', '', selYear == null)
     + YEARS.map(y => dirChip(y + '年', 'y', y, selYear === y)).join('')
+    + dirChip('更早', 'y', 'old', selYear === 'old')
     + `</span></div>`;
   html += `<div class="dir-row"><span class="dir-label">月份</span><span class="dir-opts">`
     + dirChip('全部', 'm', '', selMonth == null)
@@ -201,7 +202,11 @@ function renderIndex(){
     + `</span></div>`;
 
   const list = ANIME_DATA
-    .filter(a => (selYear == null || a.year === selYear)
+    .filter(a => (selYear == null
+                    ? true
+                    : selYear === 'old'
+                      ? a.year < 2015
+                      : a.year === selYear)
               && (selMonth == null || quarter(a.month) === selMonth))
     .sort((a, b) => b.year - a.year || quarter(b.month) - quarter(a.month));
   html += `<div class="result-head">共 ${list.length} 部</div>`;
@@ -258,7 +263,7 @@ document.addEventListener('click', e => {
   const dir = e.target.closest('.dir-chip');
   if (dir) {
     const v = dir.dataset.val;
-    if (dir.dataset.kind === 'y') { selYear = v === '' ? null : +v; selMonth = null; }
+    if (dir.dataset.kind === 'y') { selYear = v === '' ? null : (v === 'old' ? 'old' : +v); selMonth = null; }
     else { selMonth = v === '' ? null : +v; }
     render();
     return;
