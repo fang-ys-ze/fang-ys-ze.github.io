@@ -148,7 +148,7 @@ function esc(s){ return String(s).replace(/[&<>"']/g, c =>
 // 放送月份归档：只保留一月/4月/七月/十月四档，非档月归入小于它的最大档月（如 9月 → 七月番）
 const YEARS = Array.from({ length: 12 }, (_, i) => 2026 - i);   // 2026–2015
 const QUARTERS = [1, 4, 7, 10];
-const QLABEL = { 1: '一月', 4: '4月', 7: '七月', 10: '十月' };
+const QLABEL = { 1: '1月', 4: '4月', 7: '7月', 10: '10月' };
 const quarter = m => 1 + 3 * Math.floor((m - 1) / 3);
 
 let favs = load(LS_FAV, []);
