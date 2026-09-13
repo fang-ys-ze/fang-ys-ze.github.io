@@ -101,6 +101,28 @@ h1{font-size:22px;margin:0;letter-spacing:1px}
 .site-link{font-size:12px;color:var(--muted);text-decoration:none;
   transition:color .15s ease}
 .site-link:hover{color:var(--accent)}
+.review-btn{background:none;border:none;padding:0;font-family:inherit;
+  cursor:pointer}
+.review-btn.has-review{color:var(--accent)}
+#reviewPop{position:fixed;z-index:200;width:300px;max-width:calc(100vw - 24px);
+  background:#fff;border:1px solid var(--line);border-radius:12px;
+  box-shadow:0 8px 30px rgba(0,0,0,.16);padding:12px}
+.rp-arrow{position:absolute;top:-6px;left:var(--arrow-x,240px);width:12px;height:12px;
+  background:#fff;border-left:1px solid var(--line);border-top:1px solid var(--line);
+  transform:rotate(45deg)}
+#reviewPop.above .rp-arrow{top:auto;bottom:-6px;transform:rotate(225deg)}
+.rp-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.rp-title{font-size:14px;font-weight:600;color:var(--text);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rp-close{background:none;border:none;cursor:pointer;color:var(--muted);
+  font-size:16px;padding:0 2px;flex:none;transition:color .15s ease}
+.rp-close:hover{color:var(--danger)}
+.rp-text{width:100%;height:110px;resize:vertical;border:1px solid var(--line);
+  border-radius:8px;padding:8px 10px;font-size:13px;line-height:1.6;color:var(--text);
+  outline:none;background:#fafbfc;font-family:inherit;box-sizing:border-box}
+.rp-text:focus{border-color:var(--accent-line);background:#fff;
+  box-shadow:0 0 0 3px var(--accent-soft)}
+.rp-hint{margin-top:6px;font-size:11px;color:var(--muted);line-height:1.5}
 
 .empty{margin:60px 0;text-align:center;color:var(--muted)}
 .result-head{margin:20px 0 14px;font-size:14px;color:var(--muted)}
@@ -141,6 +163,12 @@ footer a{color:inherit}
 
   <footer>播放资源来自 <a href="https://cn.agekkkk.com/" target="_blank" rel="noopener">4K动漫</a> · 本页仅为个人索引</footer>
 </div>
+<div id="reviewPop" hidden>
+  <div class="rp-arrow"></div>
+  <div class="rp-head"><span id="reviewTitle" class="rp-title"></span><button class="rp-close" title="关闭">×</button></div>
+  <textarea id="reviewText" class="rp-text" placeholder="写下你对这部番的评价…（自动保存在本设备）"></textarea>
+  <div class="rp-hint">评价自动保存在本设备浏览器 · 想让所有访客看到，把文字发给我同步进数据文件</div>
+</div>
 <button id="backTop" class="back-top" title="回到顶部">↑</button>
 
 <script src="data.js"></script>
@@ -162,9 +190,11 @@ const quarter = m => 1 + 3 * Math.floor((m - 1) / 3);
 
 let favs = load(LS_FAV, []);
 let history = load(LS_HIS, []);
+let reviews = load('bk_reviews', {});
 let favMode = false;
 let selYear = null, selMonth = null;   // null = 全部
 let showOldYears = false;              // 是否展开 2016 年及以前
+let curReviewTitle = null;             // 当前打开评价的番名
 
 function cardHTML(item){
   const on = favs.includes(item.title);
@@ -177,6 +207,8 @@ function cardHTML(item){
                 item.season > 1 ? `第${item.season}季` : '',
                 item.episodes ? `${esc(item.episodes)}集` : ''].filter(Boolean).join(' · ');
   const tags = (item.tags || []).slice(0, 3).map(t => `<span>${esc(t)}</span>`).join('');
+  const pubReview = (typeof ANIME_REVIEWS !== 'undefined' && ANIME_REVIEWS[item.title]) || '';
+  const hasReview = !!(reviews[item.title] || pubReview);
   return `
   <div class="card" data-title="${esc(item.title)}">
     <div class="cover">
@@ -190,7 +222,7 @@ function cardHTML(item){
       <div class="tags">${tags}</div>
       <div class="card-actions">
         <a class="play-btn" href="${esc(item.play || item.site || '#')}" target="_blank" rel="noopener">▶ 播放</a>
-        <a class="site-link" href="${esc(item.site || item.play || '#')}" target="_blank" rel="noopener">4K页面 ↗</a>
+        <button class="site-link review-btn${hasReview ? ' has-review' : ''}" data-title="${esc(item.title)}">泽的评价</button>
       </div>
     </div>
   </div>`;
@@ -271,6 +303,11 @@ function refreshFavUI(){
 }
 
 document.addEventListener('click', e => {
+  if (e.target.closest('.rp-close')) { closeReview(); return; }
+  const reviewBtn = e.target.closest('.review-btn');
+  if (reviewBtn) { openReview(reviewBtn.dataset.title, reviewBtn); return; }
+  const pop = $('reviewPop');
+  if (!pop.hidden && !e.target.closest('#reviewPop')) { closeReview(); return; }
   const back = e.target.closest('#backBtn');
   if (back) { favMode = false; refreshFavUI(); render(); return; }
   const dir = e.target.closest('.dir-chip');
@@ -338,6 +375,41 @@ $('historyChips').addEventListener('click', e => {
 });
 $('clearHis').addEventListener('click', () => {
   history = []; save(LS_HIS, history); renderHistory(); render();
+});
+
+// 泽的评价悬浮窗
+function openReview(title, anchor){
+  const pop = $('reviewPop');
+  const ta = $('reviewText');
+  curReviewTitle = title;
+  $('reviewTitle').textContent = title;
+  const pub = (typeof ANIME_REVIEWS !== 'undefined' && ANIME_REVIEWS[title]) || '';
+  ta.value = reviews[title] != null ? reviews[title] : pub;
+  pop.hidden = false;
+  const r = anchor.getBoundingClientRect();
+  const pw = Math.min(300, window.innerWidth - 24);
+  const left = Math.max(8, Math.min(r.right - pw, window.innerWidth - pw - 8));
+  const below = window.innerHeight - r.bottom >= 260 || r.top < 260;
+  pop.classList.toggle('above', !below);
+  if (below) { pop.style.top = (r.bottom + 10) + 'px'; pop.style.bottom = 'auto'; }
+  else { pop.style.bottom = (window.innerHeight - r.top + 10) + 'px'; pop.style.top = 'auto'; }
+  pop.style.left = left + 'px';
+  pop.style.setProperty('--arrow-x', Math.max(10, Math.min(r.left + r.width / 2 - left - 6, pw - 22)) + 'px');
+  setTimeout(() => ta.focus(), 60);
+}
+function closeReview(){
+  if ($('reviewPop').hidden) return;
+  $('reviewPop').hidden = true;
+  curReviewTitle = null;
+  render();
+}
+$('reviewText').addEventListener('input', () => {
+  if (!curReviewTitle) return;
+  reviews[curReviewTitle] = $('reviewText').value;
+  save('bk_reviews', reviews);
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeReview();
 });
 
 const backTop = $('backTop');
