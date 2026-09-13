@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>番剧索引</title>
+<title>方泽的动漫屋</title>
 <style>
 :root{
   --accent:#2f9e63; --accent-soft:#eaf6ef; --accent-line:#bfe3cf;
@@ -98,12 +98,15 @@ h1{font-size:22px;margin:0;letter-spacing:1px}
 .result-head{margin:20px 0 14px;font-size:14px;color:var(--muted)}
 footer{margin-top:56px;text-align:center;font-size:12px;color:#b3bcc4}
 footer a{color:inherit}
+.kao{font-weight:400;font-size:17px;color:var(--muted)}
+.fav-head{display:flex;align-items:center;gap:14px;margin:22px 0 14px}
+.fav-head .result-head{margin:0}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
-    <h1>番剧索引</h1>
+    <h1>方泽的动漫屋呜呜呜........ <span class="kao">(ฅ'ω'ฅ)</span></h1>
     <button id="favBtn" class="btn"><span id="favIcon">♡</span> 收藏 <span id="favCount"></span></button>
   </header>
 
@@ -134,6 +137,12 @@ function save(key, val){ try{ localStorage.setItem(key, JSON.stringify(val)) }ca
 function esc(s){ return String(s).replace(/[&<>"']/g, c =>
   ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])) }
 
+// 放送月份归档：只保留一月/4月/七月/十月四档，非档月归入小于它的最大档月（如 9月 → 七月番）
+const YEARS = Array.from({ length: 12 }, (_, i) => 2026 - i);   // 2026–2015
+const QUARTERS = [1, 4, 7, 10];
+const QLABEL = { 1: '一月', 4: '4月', 7: '七月', 10: '十月' };
+const quarter = m => 1 + 3 * Math.floor((m - 1) / 3);
+
 let favs = load(LS_FAV, []);
 let history = load(LS_HIS, []);
 let favMode = false;
@@ -146,7 +155,7 @@ function cardHTML(item){
          alt="${esc(item.title)}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
     : '';
   const ph = `<div class="ph" ${item.cover ? 'style="display:none"' : ''}>${esc((item.title||'番')[0])}</div>`;
-  const meta = [`${item.year}年${item.month}月`,
+  const meta = [`${item.year}年${QLABEL[quarter(item.month)]}档`,
                 item.season > 1 ? `第${item.season}季` : '',
                 item.episodes ? `${esc(item.episodes)}集` : ''].filter(Boolean).join(' · ');
   const tags = (item.tags || []).slice(0, 3).map(t => `<span>${esc(t)}</span>`).join('');
@@ -174,24 +183,19 @@ function dirChip(label, kind, val, on){
 }
 
 function renderIndex(){
-  const years = [...new Set(ANIME_DATA.map(a => a.year))].sort((a, b) => b - a);
-  const pool = selYear == null ? ANIME_DATA : ANIME_DATA.filter(a => a.year === selYear);
-  const months = [...new Set(pool.map(a => a.month))].sort((a, b) => b - a);
-  if (selYear != null && selMonth != null && !months.includes(selMonth)) selMonth = null;
-
   let html = `<div class="dir-row"><span class="dir-label">年份</span><span class="dir-opts">`
     + dirChip('全部', 'y', '', selYear == null)
-    + years.map(y => dirChip(y + '年', 'y', y, selYear === y)).join('')
+    + YEARS.map(y => dirChip(y + '年', 'y', y, selYear === y)).join('')
     + `</span></div>`;
   html += `<div class="dir-row"><span class="dir-label">月份</span><span class="dir-opts">`
     + dirChip('全部', 'm', '', selMonth == null)
-    + months.map(m => dirChip(m + '月', 'm', m, selMonth === m)).join('')
+    + QUARTERS.map(m => dirChip(QLABEL[m], 'm', m, selMonth === m)).join('')
     + `</span></div>`;
 
   const list = ANIME_DATA
     .filter(a => (selYear == null || a.year === selYear)
-              && (selMonth == null || a.month === selMonth))
-    .sort((a, b) => b.year - a.year || b.month - a.month);
+              && (selMonth == null || quarter(a.month) === selMonth))
+    .sort((a, b) => b.year - a.year || quarter(b.month) - quarter(a.month));
   html += `<div class="result-head">共 ${list.length} 部</div>`;
   html += list.length
     ? `<div class="grid">${list.map(cardHTML).join('')}</div>`
@@ -216,10 +220,11 @@ function render(){
         q ? `没有找到「${esc(input.value.trim())}」相关的动漫`
           : '还没有收藏，点击封面右上角的 ☆ 收藏喜欢的番'}</div>`;
     } else {
-      const head = q ? `搜索「${esc(input.value.trim())}」：${list.length} 部`
-                     : `我的收藏：${list.length} 部`;
-      resultView.innerHTML = `<div class="result-head">${head}</div>
-        <div class="grid">${list.map(cardHTML).join('')}</div>`;
+      const head = q
+        ? `<div class="result-head">搜索「${esc(input.value.trim())}」：${list.length} 部</div>`
+        : `<div class="fav-head"><button id="backBtn" class="btn">← 返回</button><span class="result-head">我的收藏：${list.length} 部</span></div>`;
+      resultView.innerHTML = head +
+        `<div class="grid">${list.map(cardHTML).join('')}</div>`;
     }
     return;
   }
@@ -240,6 +245,8 @@ function refreshFavUI(){
 }
 
 document.addEventListener('click', e => {
+  const back = e.target.closest('#backBtn');
+  if (back) { favMode = false; refreshFavUI(); render(); return; }
   const dir = e.target.closest('.dir-chip');
   if (dir) {
     const v = dir.dataset.val;
