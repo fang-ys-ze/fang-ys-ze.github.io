@@ -58,7 +58,15 @@ h1{font-size:22px;margin:0;letter-spacing:1px}
 .dir-chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
 
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:18px}
-@media(max-width:480px){.grid{grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:12px}}
+@media(max-width:480px){
+  .grid{grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:12px}
+  h1{font-size:18px}
+  .kao{font-size:14px}
+  .btn{padding:6px 12px;font-size:13px}
+  .dir-row{gap:6px;margin-top:10px}
+  .dir-label{line-height:24px;width:30px}
+  .dir-chip{padding:2px 9px;font-size:12px}
+}
 
 .card{cursor:pointer;transition:transform .18s ease}
 .card:hover{transform:translateY(-3px)}
