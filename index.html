@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>番剧索引</title>
+<style>
+:root{
+  --accent:#2f9e63; --accent-soft:#eaf6ef; --accent-line:#bfe3cf;
+  --danger:#c25454; --danger-soft:#faeaea;
+  --line:#ececec; --text:#26323c; --muted:#8a97a0; --bg:#ffffff;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);
+  font:15px/1.6 -apple-system,"Segoe UI","Microsoft YaHei",sans-serif}
+.wrap{max-width:1080px;margin:0 auto;padding:0 20px 60px}
+
+header{display:flex;align-items:center;justify-content:space-between;
+  gap:12px;flex-wrap:wrap;padding:26px 0 10px}
+h1{font-size:22px;margin:0;letter-spacing:1px}
+.btn{background:#f4f6f8;border:1px solid var(--line);border-radius:10px;
+  padding:8px 16px;color:var(--text);cursor:pointer;font-size:14px;
+  transition:all .18s ease}
+.btn:hover{background:var(--accent-soft);border-color:var(--accent-line);
+  color:var(--accent);transform:translateY(-1px)}
+.btn.active{background:var(--accent-soft);border-color:var(--accent-line);color:var(--accent)}
+
+.search-bar{margin:14px 0 0}
+#searchInput{width:100%;padding:11px 16px;font-size:15px;color:var(--text);
+  border:1px solid var(--line);border-radius:12px;outline:none;background:#fafbfc;
+  transition:all .18s ease}
+#searchInput:hover{border-color:#d7dde2}
+#searchInput:focus{border-color:var(--accent-line);background:#fff;
+  box-shadow:0 0 0 3px var(--accent-soft)}
+#searchInput::placeholder{color:#b3bcc4}
+
+#historyBar{display:none;align-items:center;flex-wrap:wrap;gap:8px;
+  margin:12px 0 4px;font-size:13px;color:var(--muted)}
+.chip{display:inline-flex;align-items:center;gap:4px;background:#f4f6f8;
+  border:1px solid var(--line);border-radius:999px;padding:3px 6px 3px 12px;
+  font-size:13px;color:var(--text);cursor:pointer;transition:all .18s ease}
+.chip:hover{background:var(--accent-soft);border-color:var(--accent-line)}
+.chip .x{display:inline-flex;align-items:center;justify-content:center;
+  width:18px;height:18px;border-radius:50%;color:var(--muted);font-size:13px;
+  transition:all .15s ease}
+.chip .x:hover{background:var(--danger-soft);color:var(--danger)}
+.clear-his{background:none;border:none;color:var(--muted);font-size:13px;
+  cursor:pointer;padding:2px 4px;transition:color .15s ease}
+.clear-his:hover{color:var(--danger)}
+
+.dir-row{display:flex;align-items:flex-start;gap:8px;margin-top:14px;flex-wrap:wrap}
+.dir-label{font-size:13px;color:var(--muted);width:36px;flex:none;line-height:26px}
+.dir-opts{display:inline-flex;flex-wrap:wrap;gap:8px}
+.dir-chip{background:#f4f6f8;border:1px solid var(--line);border-radius:8px;
+  padding:2px 12px;font-size:13px;color:var(--text);cursor:pointer;
+  transition:all .18s ease}
+.dir-chip:hover{background:var(--accent-soft);border-color:var(--accent-line);color:var(--accent)}
+.dir-chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:18px}
+@media(max-width:480px){.grid{grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:12px}}
+
+.card{cursor:pointer;transition:transform .18s ease}
+.card:hover{transform:translateY(-3px)}
+.cover{position:relative;aspect-ratio:3/4;border-radius:12px;overflow:hidden;
+  background:#f2f4f5;box-shadow:0 1px 3px rgba(0,0,0,.06);
+  transition:box-shadow .18s ease}
+.card:hover .cover{box-shadow:0 6px 18px rgba(0,0,0,.12)}
+.cover img{width:100%;height:100%;object-fit:cover;display:block;
+  transition:transform .25s ease}
+.card:hover .cover img{transform:scale(1.05)}
+.ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-size:34px;color:#c3ccd3;background:linear-gradient(145deg,#f4f7f8,#e9eef1)}
+.star{position:absolute;top:7px;right:7px;width:30px;height:30px;
+  border-radius:50%;border:none;cursor:pointer;font-size:17px;line-height:1;
+  color:#9aa7b0;background:rgba(255,255,255,.88);
+  box-shadow:0 1px 4px rgba(0,0,0,.15);transition:all .18s ease}
+.star:hover{transform:scale(1.15);color:#e8a33d}
+.star.on{color:#e8a33d;background:rgba(255,255,255,.95)}
+.info{padding:9px 2px 0}
+.title{font-size:14px;font-weight:600;line-height:1.4;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+  overflow:hidden}
+.meta{font-size:12px;color:var(--muted);margin-top:2px}
+.tags{margin-top:6px;display:flex;flex-wrap:wrap;gap:5px}
+.tags span{font-size:11px;color:var(--accent);background:var(--accent-soft);
+  border-radius:5px;padding:1px 7px}
+.card-actions{margin-top:8px;display:flex;align-items:center;gap:10px}
+.play-btn{background:var(--accent-soft);border:1px solid var(--accent-line);
+  color:var(--accent);border-radius:8px;padding:4px 13px;font-size:13px;
+  cursor:pointer;transition:all .18s ease;text-decoration:none;display:inline-block}
+.play-btn:hover{background:var(--accent);border-color:var(--accent);color:#fff}
+.site-link{font-size:12px;color:var(--muted);text-decoration:none;
+  transition:color .15s ease}
+.site-link:hover{color:var(--accent)}
+
+.empty{margin:60px 0;text-align:center;color:var(--muted)}
+.result-head{margin:20px 0 14px;font-size:14px;color:var(--muted)}
+footer{margin-top:56px;text-align:center;font-size:12px;color:#b3bcc4}
+footer a{color:inherit}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>番剧索引</h1>
+    <button id="favBtn" class="btn"><span id="favIcon">♡</span> 收藏 <span id="favCount"></span></button>
+  </header>
+
+  <div class="search-bar">
+    <input id="searchInput" type="text" placeholder="搜索动漫名称…" autocomplete="off">
+  </div>
+
+  <div id="historyBar">
+    <span>历史：</span>
+    <span id="historyChips" style="display:inline-flex;flex-wrap:wrap;gap:8px"></span>
+    <button id="clearHis" class="clear-his">清空</button>
+  </div>
+
+  <main id="indexView"></main>
+  <main id="resultView" hidden></main>
+
+  <footer>播放资源来自 <a href="https://cn.agekkkk.com/" target="_blank" rel="noopener">4K动漫</a> · 本页仅为个人索引</footer>
+</div>
+
+<script src="data.js"></script>
+<script>
+const LS_FAV = 'bk_favs', LS_HIS = 'bk_history';
+const $ = id => document.getElementById(id);
+const input = $('searchInput'), indexView = $('indexView'), resultView = $('resultView');
+
+function load(key, def){ try{ return JSON.parse(localStorage.getItem(key)) ?? def }catch(e){ return def } }
+function save(key, val){ try{ localStorage.setItem(key, JSON.stringify(val)) }catch(e){} }
+function esc(s){ return String(s).replace(/[&<>"']/g, c =>
+  ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])) }
+
+let favs = load(LS_FAV, []);
+let history = load(LS_HIS, []);
+let favMode = false;
+let selYear = null, selMonth = null;   // null = 全部
+
+function cardHTML(item){
+  const on = favs.includes(item.title);
+  const img = item.cover
+    ? `<img src="${esc(item.cover)}" referrerpolicy="no-referrer" loading="lazy"
+         alt="${esc(item.title)}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+    : '';
+  const ph = `<div class="ph" ${item.cover ? 'style="display:none"' : ''}>${esc((item.title||'番')[0])}</div>`;
+  const meta = [`${item.year}年${item.month}月`,
+                item.season > 1 ? `第${item.season}季` : '',
+                item.episodes ? `${esc(item.episodes)}集` : ''].filter(Boolean).join(' · ');
+  const tags = (item.tags || []).slice(0, 3).map(t => `<span>${esc(t)}</span>`).join('');
+  return `
+  <div class="card" data-title="${esc(item.title)}">
+    <div class="cover">
+      ${img}${ph}
+      <button class="star${on ? ' on' : ''}" data-title="${esc(item.title)}"
+        title="${on ? '取消收藏' : '收藏'}">${on ? '★' : '☆'}</button>
+    </div>
+    <div class="info">
+      <div class="title">${esc(item.title)}</div>
+      <div class="meta">${meta}</div>
+      <div class="tags">${tags}</div>
+      <div class="card-actions">
+        <a class="play-btn" href="${esc(item.play || item.site || '#')}" target="_blank" rel="noopener">▶ 播放</a>
+        <a class="site-link" href="${esc(item.site || item.play || '#')}" target="_blank" rel="noopener">4K页面 ↗</a>
+      </div>
+    </div>
+  </div>`;
+}
+
+function dirChip(label, kind, val, on){
+  return `<button class="dir-chip${on ? ' on' : ''}" data-kind="${kind}" data-val="${val}">${label}</button>`;
+}
+
+function renderIndex(){
+  const years = [...new Set(ANIME_DATA.map(a => a.year))].sort((a, b) => b - a);
+  const pool = selYear == null ? ANIME_DATA : ANIME_DATA.filter(a => a.year === selYear);
+  const months = [...new Set(pool.map(a => a.month))].sort((a, b) => b - a);
+  if (selYear != null && selMonth != null && !months.includes(selMonth)) selMonth = null;
+
+  let html = `<div class="dir-row"><span class="dir-label">年份</span><span class="dir-opts">`
+    + dirChip('全部', 'y', '', selYear == null)
+    + years.map(y => dirChip(y + '年', 'y', y, selYear === y)).join('')
+    + `</span></div>`;
+  html += `<div class="dir-row"><span class="dir-label">月份</span><span class="dir-opts">`
+    + dirChip('全部', 'm', '', selMonth == null)
+    + months.map(m => dirChip(m + '月', 'm', m, selMonth === m)).join('')
+    + `</span></div>`;
+
+  const list = ANIME_DATA
+    .filter(a => (selYear == null || a.year === selYear)
+              && (selMonth == null || a.month === selMonth))
+    .sort((a, b) => b.year - a.year || b.month - a.month);
+  html += `<div class="result-head">共 ${list.length} 部</div>`;
+  html += list.length
+    ? `<div class="grid">${list.map(cardHTML).join('')}</div>`
+    : `<div class="empty">该年月下还没有番剧</div>`;
+  indexView.innerHTML = html;
+}
+
+function render(){
+  const q = input.value.trim().toLowerCase();
+  let list = ANIME_DATA;
+  if (favMode) list = list.filter(a => favs.includes(a.title));
+  if (q) list = list.filter(a =>
+    (a.title + ' ' + (a.tags || []).join(' ')).toLowerCase().includes(q));
+
+  $('historyBar').style.display = (!q && history.length) ? 'flex' : 'none';
+
+  if (q || favMode) {
+    indexView.hidden = true;
+    resultView.hidden = false;
+    if (!list.length) {
+      resultView.innerHTML = `<div class="empty">${
+        q ? `没有找到「${esc(input.value.trim())}」相关的动漫`
+          : '还没有收藏，点击封面右上角的 ☆ 收藏喜欢的番'}</div>`;
+    } else {
+      const head = q ? `搜索「${esc(input.value.trim())}」：${list.length} 部`
+                     : `我的收藏：${list.length} 部`;
+      resultView.innerHTML = `<div class="result-head">${head}</div>
+        <div class="grid">${list.map(cardHTML).join('')}</div>`;
+    }
+    return;
+  }
+
+  resultView.hidden = true;
+  indexView.hidden = false;
+  if (!ANIME_DATA.length) {
+    indexView.innerHTML = `<div class="empty">还没有数据，番剧名单提供后会填充在这里</div>`;
+    return;
+  }
+  renderIndex();
+}
+
+function refreshFavUI(){
+  $('favCount').textContent = favs.length ? `(${favs.length})` : '';
+  $('favBtn').classList.toggle('active', favMode);
+  $('favIcon').textContent = favMode ? '♥' : '♡';
+}
+
+document.addEventListener('click', e => {
+  const dir = e.target.closest('.dir-chip');
+  if (dir) {
+    const v = dir.dataset.val;
+    if (dir.dataset.kind === 'y') { selYear = v === '' ? null : +v; selMonth = null; }
+    else { selMonth = v === '' ? null : +v; }
+    render();
+    return;
+  }
+  const star = e.target.closest('.star');
+  if (star) {
+    const t = star.dataset.title;
+    const i = favs.indexOf(t);
+    if (i >= 0) favs.splice(i, 1); else favs.push(t);
+    save(LS_FAV, favs);
+    document.querySelectorAll(`.star[data-title="${CSS.escape(t)}"]`).forEach(s => {
+      const on = favs.includes(t);
+      s.classList.toggle('on', on);
+      s.textContent = on ? '★' : '☆';
+    });
+    refreshFavUI();
+    return;
+  }
+  const card = e.target.closest('.card');
+  if (card && !e.target.closest('a')) {
+    const item = ANIME_DATA.find(a => a.title === card.dataset.title);
+    if (item) window.open(item.play || item.site, '_blank', 'noopener');
+  }
+});
+
+$('favBtn').addEventListener('click', () => { favMode = !favMode; refreshFavUI(); render(); });
+
+input.addEventListener('input', render);
+input.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && input.value.trim()) { pushHistory(input.value.trim()); render(); }
+});
+
+function pushHistory(term){
+  history = [term, ...history.filter(t => t !== term)].slice(0, 12);
+  save(LS_HIS, history);
+  renderHistory();
+}
+function removeHistory(term){
+  history = history.filter(t => t !== term);
+  save(LS_HIS, history);
+  renderHistory(); render();
+}
+function renderHistory(){
+  $('historyChips').innerHTML = history.map(t =>
+    `<button class="chip" data-term="${esc(t)}">${esc(t)}<span class="x" data-x="${esc(t)}" title="删除">×</span></button>`
+  ).join('');
+}
+$('historyChips').addEventListener('click', e => {
+  const x = e.target.closest('.x');
+  if (x) { removeHistory(x.dataset.x); return; }
+  const chip = e.target.closest('.chip');
+  if (chip) { input.value = chip.dataset.term; render(); }
+});
+$('clearHis').addEventListener('click', () => {
+  history = []; save(LS_HIS, history); renderHistory(); render();
+});
+
+refreshFavUI();
+renderHistory();
+render();
+</script>
+</body>
+</html>
