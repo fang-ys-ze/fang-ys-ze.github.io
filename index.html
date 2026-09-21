@@ -122,6 +122,8 @@ h1{font-size:22px;margin:0;letter-spacing:1px}
   outline:none;background:#fafbfc;font-family:inherit;box-sizing:border-box}
 .rp-text:focus{border-color:var(--accent-line);background:#fff;
   box-shadow:0 0 0 3px var(--accent-soft)}
+.rp-count{font-size:12px;color:var(--muted);margin-top:6px}
+.rp-count:empty{display:none}
 
 .empty{margin:60px 0;text-align:center;color:var(--muted)}
 .result-head{margin:20px 0 14px;font-size:14px;color:var(--muted)}
@@ -166,6 +168,7 @@ footer a{color:inherit}
   <div class="rp-arrow"></div>
   <div class="rp-head"><span id="reviewTitle" class="rp-title"></span><button class="rp-close" title="关闭">×</button></div>
   <textarea id="reviewText" class="rp-text" placeholder="写下你对这部番的评价…（自动保存在本设备）"></textarea>
+  <div id="reviewCount" class="rp-count"></div>
 </div>
 <button id="backTop" class="back-top" title="回到顶部">↑</button>
 
@@ -376,6 +379,10 @@ $('clearHis').addEventListener('click', () => {
 });
 
 // 泽的评价悬浮窗
+function setReviewCount(){
+  const s = $('reviewText').value.trim();
+  $('reviewCount').textContent = s ? [...s].length + '字' : '';
+}
 function openReview(title, anchor){
   const pop = $('reviewPop');
   const ta = $('reviewText');
@@ -383,6 +390,7 @@ function openReview(title, anchor){
   $('reviewTitle').textContent = title;
   const pub = (typeof ANIME_REVIEWS !== 'undefined' && ANIME_REVIEWS[title]) || '';
   ta.value = reviews[title] != null ? reviews[title] : pub;
+  setReviewCount();
   pop.hidden = false;
   const r = anchor.getBoundingClientRect();
   const pw = Math.min(300, window.innerWidth - 24);
@@ -405,6 +413,7 @@ $('reviewText').addEventListener('input', () => {
   if (!curReviewTitle) return;
   reviews[curReviewTitle] = $('reviewText').value;
   save('bk_reviews', reviews);
+  setReviewCount();
 });
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') closeReview();
